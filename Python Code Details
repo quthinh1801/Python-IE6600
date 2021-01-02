@@ -1,0 +1,572 @@
+"""
+For section 1: You need to write your code in order to regenerate the exact result as shown under each question
+For section 2: You need to generate the answers based on the questions without having the sample results.
+
+"""
+
+print(__doc__)
+
+# Section 1
+
+### Note
+* Instructions have been included for each segment. You do not have to follow them exactly, but they are included to help you think through the steps.
+
+# Dependencies and Setup
+import pandas as pd
+import numpy as np
+
+# File to Load (Remember to Change These)
+file_to_load = "purchase_data.csv"
+
+# Read Purchasing File and store into Pandas data frame
+purchase_data = pd.read_csv(file_to_load)
+
+purchase_data.head()
+
+### Q1 - check for missing data
+
+purchase_data.notnull().sum()
+
+## Player Count
+
+### Q2 - Display the total number of players
+
+
+NumPlayer = purchase_data[['SN']]
+NumPlayer = NumPlayer.drop_duplicates() 
+NumPlayer = NumPlayer.shape[0]
+DisplayNumPlayer = pd.DataFrame({'Total # of Players': [NumPlayer]})
+DisplayNumPlayer 
+
+### Q3- Purchasing Analysis (Total)
+
+* Obtain number of unique items, average price, etc.
+
+
+* Create a summary data frame to hold the results
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+* Display the summary data frame
+
+
+#Create a subset from purchase_data
+TotalPurchase = purchase_data[['Item ID','Price']]
+
+#Calculate Unique Items, Average Price, Total Purchases, Total Revenue
+UniqueValue = TotalPurchase['Item ID'].nunique()
+AveragePrice = round(TotalPurchase['Price'].mean(),2)
+TotalPurchases = TotalPurchase['Item ID'].count()
+TotalRevenue = TotalPurchase['Price'].sum()
+
+#Create data frame
+TotalPurchase = pd.DataFrame({'Unique items':[UniqueValue],'Average Price':[AveragePrice],'Total Purchases':[TotalPurchases],'Total Revenue':[TotalRevenue]})
+
+#Apply $ sign
+TotalPurchase['Average Price'] = TotalPurchase['Average Price'].map('${:,.2f}'.format)
+TotalPurchase['Total Revenue'] = TotalPurchase['Total Revenue'].map('${:,.2f}'.format)
+
+#Display result
+TotalPurchase
+
+### Q4- Gender Demographics
+
+* Percentage and Count of Male Players
+
+
+* Percentage and Count of Female Players
+
+
+* Percentage and Count of Other / Non-Disclosed
+
+
+
+
+#Subset on SN and Gender
+GenderDemo = purchase_data[['SN','Gender']] 
+
+#Remove Duplicates
+GenderDemo = GenderDemo.drop_duplicates() 
+
+#Apply Group By to Count
+GenderDemo = GenderDemo.groupby(['Gender']).size().to_frame('Count').reset_index()
+
+#Calculate Percentage
+GenderDemo['Percent of Total Players'] = GenderDemo['Count']/ GenderDemo['Count'].sum()*100
+
+#Reformat, add % sign to 'Percent of Total Players' column
+
+GenderDemo['Percent of Total Players'] = GenderDemo['Percent of Total Players'].map('{:,.2f}%'.format)
+
+#Sort by Percent of Total Players
+GenderDemo = GenderDemo.sort_values(by = ['Percent of Total Players'], ascending = False)
+
+#Clear column name for Gender
+GenderDemo = GenderDemo.rename(columns = {"Gender":""})
+
+#Set index that column
+GenderDemo.set_index('')
+
+
+### Q5-Purchasing Analysis (Gender)
+
+* Run basic calculations to obtain purchase count, avg. purchase price, avg. purchase total per person etc. by gender
+
+
+
+
+* Create a summary data frame to hold the results
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+
+
+#Create subset
+Gender_Purchase = purchase_data[['Gender','Price']] 
+
+#Rename Price column
+Gender_Purchase = Gender_Purchase.rename(columns = {"Price":"Amount Purchase"})
+
+#Apply group by
+Gender_Purchase = Gender_Purchase.groupby('Gender').agg({'Amount Purchase': 'sum'})
+                                                         
+#Apply $ sign for Price-related column                                                         
+Gender_Purchase['Amount Purchase'] = Gender_Purchase['Amount Purchase'].map('${:,.2f}'.format)
+
+#Display value
+Gender_Purchase                                                        
+
+#### Q6-Display the summary data frame
+
+pd.options.mode.chained_assignment = None  # default='warn'
+
+#Create subset
+GenderSummary1 = purchase_data[['Gender','SN','Price']] 
+
+#Duplicate Price column
+GenderSummary1['Price2'] = GenderSummary1['Price']
+
+#Apply Group By
+GenderSummary1 = GenderSummary1.groupby('Gender').agg({'SN': 'count','Price': 'mean', 'Price2': 'sum'})
+
+#Rename, round numbers, apply $ sign column
+GenderSummary1 = GenderSummary1.rename(columns = {"SN":"Purchase Count","Price":"Avg Purchase Price","Price2":"Total Revenue"})
+GenderSummary1['Avg Purchase Price'] = round(GenderSummary1['Avg Purchase Price'],2)
+GenderSummary1['Avg Purchase Price'] = GenderSummary1['Avg Purchase Price'].map('${:,.2f}'.format)
+GenderSummary1['Total Revenue'] = GenderSummary1['Total Revenue'].map('${:,.2f}'.format)
+
+#Calculate number of players
+GenderSummary2 = purchase_data[['Gender','SN']]
+GenderSummary2 = GenderSummary2.drop_duplicates() 
+GenderSummary2 = GenderSummary2.groupby('Gender').agg({'SN':'count'})
+GenderSummary2 = GenderSummary2.rename(columns = {"SN": "Number of Players"})
+
+#Merge 2 Data Frames
+GenderSummary = pd.merge(GenderSummary2,GenderSummary1, left_index = True, right_on = 'Gender')
+
+#Format index
+GenderSummary = GenderSummary.reset_index()
+GenderSummary = GenderSummary.rename(columns = {"Gender":""})
+GenderSummary.set_index('')
+
+### Q7- Age Demographics
+
+* Establish bins for ages
+
+
+* Categorize the existing players using the age bins. Hint: use pd.cut()
+
+
+* Calculate the numbers and percentages by age group
+
+
+* Create a summary data frame to hold the results
+
+
+* Optional: round the percentage column to two decimal points
+
+
+* Display Age Demographics Table
+
+
+#Subset on SN and Age
+AgeDemo = purchase_data[['Age','SN']] 
+
+#Drop duplicates
+AgeDemo = AgeDemo.drop_duplicates() 
+
+#Drop column SN since it's irrelevant now
+AgeDemo = AgeDemo[['Age']] 
+
+#Categorize Age Group
+bins = [0,10,15,20,25,30,35,40,100]
+labels = ['<10','10-14','15-19','20-24','25-29','30-34','35-39','40+']
+AgeDemo['age_group'] = pd.cut(AgeDemo['Age'], bins = bins, labels = labels, right = False )
+
+#Apply group by to count
+AgeDemo = AgeDemo.groupby(by = "age_group").count()
+
+#Rename column Age to Total Count
+AgeDemo = AgeDemo.rename(columns = {"Age":"Total Count"})
+
+#Calculate Percentage of Players
+AgeDemo['Percentage of Players'] = round(AgeDemo['Total Count']/ AgeDemo['Total Count'].sum()*100,2)
+
+#Display Result
+AgeDemo
+
+
+### Q8- Purchasing Analysis (Age)
+
+* Bin the purchase_data data frame by age
+
+
+* Run basic calculations to obtain purchase count, avg. purchase price, avg. purchase total per person etc. in the table below
+
+
+* Create a summary data frame to hold the results
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+* Display the summary data frame
+
+import warnings #To ignore warning
+warnings.filterwarnings("ignore")
+
+#Subset on Age and Price
+AgeAnalysis = purchase_data[['Age','Price']] 
+
+#Categorize Age Group by bins and labels set above
+AgeAnalysis['age_group'] = pd.cut(AgeAnalysis['Age'], bins = bins, labels = labels, right = False )
+
+#Drop column Age since it's irrelevant now
+AgeAnalysis = AgeAnalysis[['age_group','Price']]
+
+#Duplicate Price columns for group by computation
+AgeAnalysis['Price2'] = AgeAnalysis['Price']
+AgeAnalysis['Price3'] = AgeAnalysis['Price']
+AgeAnalysis = AgeAnalysis.groupby('age_group').agg({'Price': 'count','Price2': 'mean', 'Price3': 'sum'})
+
+#Rename columns
+AgeAnalysis = AgeAnalysis.rename(columns = {"Price":"Purchase Count","Price2":"Average Purchase Price","Price3":"Total Purchase Value"})
+
+#Round Average Purchase Price Column
+AgeAnalysis['Average Purchase Price'] = round(AgeAnalysis['Average Purchase Price'],2)
+
+#Apply $ to Average Purchase Price and Total Purchase Value
+dollar_dict = {'Average Purchase Price': '${:,.2f}','Total Purchase Value': '${:,.2f}'}
+AgeAnalysis.style.format(dollar_dict)
+
+### Q9-Top Spenders
+
+* Run basic calculations to obtain the results in the table below
+
+
+* Create a summary data frame to hold the results
+
+
+* Sort the total purchase value column in descending order
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+* Display a preview of the summary data frame
+
+
+
+#Subset on SN and Price
+TopSpenders = purchase_data[['SN','Price']] 
+
+#Perform group by computations
+TopSpenders['Price2'] = TopSpenders['Price']
+TopSpenders['Price3'] = TopSpenders['Price']
+TopSpenders =  TopSpenders.groupby('SN').agg({'Price': 'count','Price2': 'mean', 'Price3': 'sum'})
+
+#Rename column
+TopSpenders = TopSpenders.rename(columns = {"Price":"Purchase Count","Price2":"Average Purchase Price","Price3":"Total Purchase Value"})
+
+#Round Average Purchase Price Column
+TopSpenders['Average Purchase Price'] = round(TopSpenders['Average Purchase Price'],2)
+
+#Sort by Percent of Total Players
+TopSpenders = TopSpenders.sort_values(by = ['Total Purchase Value'], ascending = False)
+
+#Apply $ sign
+TopSpenders['Average Purchase Price'] = TopSpenders['Average Purchase Price'].map('${:,.2f}'.format)
+TopSpenders['Total Purchase Value'] = TopSpenders['Total Purchase Value'].map('${:,.2f}'.format)
+
+#Format index
+TopSpenders = TopSpenders.reset_index()
+TopSpenders = TopSpenders.rename(columns = {"SN":""})
+TopSpenders = TopSpenders.set_index('')
+TopSpenders.head(5)
+
+### Q10-Most Popular Items
+
+* Retrieve the Item ID, Item Name, and Item Price columns
+
+
+* Group by Item ID and Item Name. Perform calculations to obtain purchase count, item price, and total purchase value
+
+
+* Create a summary data frame to hold the results
+
+
+* Sort the purchase count column in descending order
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+* Display a preview of the summary data frame
+
+
+
+#Create subset and duplicate columns
+PopularItems = purchase_data[['Item ID','Item Name','Price']] 
+PopularItems['Price2'] = PopularItems['Price']
+PopularItems['Price3'] = PopularItems['Price']
+
+#Group By to find count, price, and total value
+PopularItems = PopularItems.groupby(['Item ID','Item Name']).agg({'Price':'count','Price2':'max','Price3':'sum'})
+
+#Rename column for presentation
+PopularItems = PopularItems.rename(columns = {"Price":"Purchase Count","Price2":"Item Price","Price3":"Total Purchase Value"})
+
+#Sort column and apply $ sign
+SortPopularItems = PopularItems.sort_values(by = ['Purchase Count'], ascending = False)
+SortPopularItems['Item Price'] = PopularItems['Item Price'].map('${:,.2f}'.format)
+SortPopularItems['Total Purchase Value'] = PopularItems['Total Purchase Value'].map('${:,.2f}'.format)
+
+#Display value
+SortPopularItems.head(5)
+
+### Q11-Most Profitable Items
+
+* Sort the above table by total purchase value in descending order
+
+
+* Optional: give the displayed data cleaner formatting
+
+
+* Display a preview of the data frame
+
+
+
+#Sort column and apply $ sign
+SortProfitableItems = PopularItems.sort_values(by = ['Total Purchase Value'], ascending = False)
+SortProfitableItems['Item Price'] = SortProfitableItems['Item Price'].map('${:,.2f}'.format)
+SortProfitableItems['Total Purchase Value'] = SortProfitableItems['Total Purchase Value'].map('${:,.2f}'.format)
+
+#Display value
+SortProfitableItems.head(5)
+
+# Section 2
+
+#### Q12: Import the covid-19 dataset provided and set the state as the index of the dataframe.
+
+covid = pd.read_csv("us_states_covid19_daily.csv", index_col = 'state')
+covid.head(5)    
+
+#### Q13: Replace all the NaN values in 'pending' column with the string 'None'.
+
+covid['pending'].fillna('None', inplace = True)
+covid.tail(10)
+
+#### Q14: Replace the NaN values in the 'hospitalized' columns with the mean value of the column.
+
+hospitalized = covid['hospitalized']
+hospitalized_mean = hospitalized.mean() 
+covid['hospitalized'].fillna(hospitalized_mean, inplace = True)
+covid.head(10)
+
+#### Q15: Find the death percentage (round to 2 decimal points) of covid positive patients for each state and add it as a column in the dataset. (death% = death/positive)
+
+covid['death percentage'] = round(covid['death']/covid['positive']*100,2)
+covid['death percentage'] = covid['death percentage'].map('{:,.2f}%'.format)      
+covid['death percentage']
+
+#### Q16: Print the total number of negative, positive, and recovered cases in the US.
+
+print('Total Number of negative cases: ',covid['negative'].sum())
+print('Total Number of positive cases: ',covid['positive'].sum())
+print('Total Number of positive cases: ',covid['recovered'].sum())
+
+#### Q17: What percent of the covid positive patients from the state of NY were hospitalized (round the value to 2 decimal places)?
+
+NewYork = covid.loc['NY']
+Q17 = round(NewYork.hospitalized/NewYork.positive*100,2)
+print('Percentage of covid positive patitents from the state of NY were hospitalized: ',Q17,'%')
+
+#### Q18: Return the state name with the maximum number of covid positive cases
+
+maxpositive = covid['positive'].max()
+Q18 = covid[covid['positive'] == maxpositive]
+Q18 = Q18.index.tolist()
+print(str(Q18).strip('[]'))
+
+#### Q19: Return the number of states with more than the mean value of positive cases
+
+#Find average positive cases
+positive = covid['positive']
+positive_mean = positive.mean()
+
+#Count numbers of state with more than mean value of positive cases
+count = 0
+for i in positive:
+    if i > positive_mean:
+        count = count+1
+        
+#Display value
+print('Number of states with more than the mean value of positive cases: ',count)
+
+#### Q20: Print the data of those states whose no of negative cases is greater than the number of negative cases for MT. Then sort the dataframe wrt the total column values in descending order.
+
+MT = covid._get_value('MT','negative')
+Q20 = covid[covid['negative'] > MT]
+Q20.sort_values(by = ['total'], ascending = False)
+
+#### Q21: Create a new column called recovery_rate which classifies a state as- 
+    a) 'High Recovery' when recovered% > 50
+    b) 'Modearate Recovery' when recovered% is between 25 and 50 
+    c) 'Low Recovery' when recovered% is less than 25
+#### where recovered% = recovered / positive for each state
+
+#Find in misssing recover with 0
+covid['recovered'].fillna(0, inplace = True)
+
+#Create recover% = recovered / positive for each state
+covid['recover%'] = round(covid['recovered']/covid['positive']*100,2)
+
+#Categorize recover% group to recovery_rate
+bins2 = [0,25,50,100]
+labels2 = ['Low Recovery','Moderate Recovery','High Recovery']
+covid['recovery_rate'] = pd.cut(covid['recover%'], bins = bins2, labels = labels2, right = False )
+
+#Display value
+covid[['recovered','positive','recover%','recovery_rate']].head(20)
+
+# Plotting pandas using IRIS dataset
+
+#### Note: This problem makes use of the iris data set and depends upon your having completed the previous problem, so please do that first.
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+iris = pd.read_csv('iris.csv')
+iris['Name'] = iris['Name'].str.replace("Iris-","") #Remove iris-
+iris.head()
+
+#### Q22: Use the built-in pandas plotting tools to make a box-and-whisker plot showing the distribution of petal ratio and sepal ratio for each of the three species. Your plot should have two subplots, one for petal ratio and one for sepal ratio. You may choose the details of your plots (i.e., how to handle outliers, displaying mean vs median, etc) however you think is best. Please include labels on your x- and y-axes and give an appropriate title to your plot.
+
+iris['SepalRatio'] = round(iris['SepalLength']/iris['SepalWidth'],2)
+iris['PetalRatio'] = round(iris['PetalLength']/iris['PetalWidth'],2)
+iris.head()
+
+plt.rcParams.update({'font.size':15, 'figure.figsize':(10,8)})
+ax1 = iris.boxplot(by = 'Name', column = ['SepalRatio'])
+plt.title("Boxplot of Sepal ratio")
+plt.suptitle("")
+ax1.set_xlabel('Name of Species')
+ax1.set_ylabel('Sepal Ratio')
+plt.show()
+
+ax2 = iris.boxplot(by = 'Name', column = ['PetalRatio'])
+plt.title("Boxplot of Petal ratio")
+plt.suptitle("")
+ax2.set_xlabel('Name of Species')
+ax2.set_ylabel('Petal Ratio')
+plt.show()
+
+#### Q23: Use the built-in pandas plotting tools to make a scatter matrix plot for the four original features (petal width, petal length, sepal width and sepal length). Each point in the scatter plot should be colored according to its species. Hint: see the documentation at https://pandas.pydata.org/pandas-docs/stable/visualization.html# scatter-matrix-plot to get started.
+
+from pandas.plotting import scatter_matrix
+iris = pd.read_csv('iris.csv')
+iris['Name'] = iris['Name'].str.replace("Iris-","") #Remove iris-
+colors = iris['Name'].replace({'setosa':'red', 'virginica': 'green', 'versicolor':'blue'})
+pd.plotting.scatter_matrix(iris, c = colors, cmap='viridis');
+
+## Load the stockprice dataset
+
+stock = pd.read_csv("timeseries_stockprice.csv", header=0) #add header
+stock.head()
+
+#### Q24-Plotting a single series
+
+To plot a single series, such as the closing stock price for Amazon for each date, you can simple designate the x-axis values as Date and the y-axis values as Amazon and set the kind parameter to line.
+
+stock.plot.line(x= "Date", y= "Amazon");
+
+#### Q25-Plotting two series
+
+When plotting two series, set the y-axis values to a list containing the two column names, each being a data series.
+
+stock.plot(kind = "line", x = "Date", y = ["Google", "Facebook"]);
+
+#### Q26- Plotting three series
+
+When plotting three series, set the y-axis values to a list containing the three column names, each being a data series.
+
+stock.plot(kind = "line", x = "Date", y = ["Amazon","Facebook","Google"]);
+
+## Load the following dataset
+
+import pandas as pd
+mydata = pd.read_csv("mba.csv", header=0, index_col ="School") #add header and index
+mydata.head()
+
+#### Q27-Plot the Box plot using both approach available in pandas: 
+
+    * .plot
+    * .boxplot
+
+mydata['Average_salary'].plot(kind= "box", title="Box plot of average salary of the top 25 MBA programs");
+
+mydata['Average_salary'].plot.box(vert = False, title = "Box plot of average salary of the top 25 MBA programs");
+
+#### Q28- creat a box plot of two variables: "the average student" and "average work experience" in one graph (side by side)
+
+mydata[['Avg_Age_Students','Avg_Work_Experience']].plot.box();
+
+#### Q29- Formatting with .boxplot().
+change the following parameters for the previous question as grid=False and fontsize=14:
+
+mydata[['Avg_Age_Students','Avg_Work_Experience']].plot.box(grid=False, fontsize=14);
+
+#### Q30-Histograms
+plot the histogram of Tuitions with proper bins
+
+mydata['Tuition'].plot(kind = 'hist', title = 'Tuition Histogram', color = 'r', alpha = 0.5, bins = 5);
+
+#### Q31-Scatter plots
+plot the scatter plot using Rank (x-axis) and Grad_job (y-axis) and set the proper xlim
+
+from matplotlib.axes._axes import _log as matplotlib_axes_logger
+matplotlib_axes_logger.setLevel('ERROR')
+mydata.plot.scatter(x = 'Rank', y = 'Grad_Jobs',
+                    title='MBA Program Rank vs Percentage of graduates with jobs',xlim=0 );
+
+#### Q32-Bar charts
+plot horrizontal bar graph for Tuition and assign a proper title for your graph
+
+plt.rcParams["figure.figsize"]=10,5
+mydata['Tuition'].plot.bar(title='Total tuition(USD) for the top MBA programs');
+
+### Q33-Refine the bar chart with a few aesthetic elements.
+
+
+* The legend parameter is set to False to remove the redundant legend.
+* The color parameter can set the color values using RGB. RGB is a way of making colors. You have to provide an amount of red, green and blue + the transparency and it returns a color.
+* The edgecolor parameter allows you to set the border of the bars.
+
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True}) # keeps labels cutoff
+mydata.head(7).plot(kind='barh', y = 'Tuition', title='Tuition fee(in USD) for the top 7 ranked MBA programs',
+                   legend=False, color=(0.3, 0.5, 0.2, 0.6), edgecolor='white');
